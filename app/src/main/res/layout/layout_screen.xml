@@ -6,36 +6,36 @@
     android:gravity="center">
 
     <TextView
-        android:textSize="21sp"
-        android:text="画面设置"
+        android:textSize="@dimen/ScreenFragment_tv_textSize"
+        android:text="@string/tv_screenMenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <LinearLayout
         android:id="@+id/LL_screen"
         android:gravity="center"
-        android:layout_width="400dp"
-        android:layout_height="100dp"
+        android:layout_width="@dimen/ScreenFragment_LL_Screen_width"
+        android:layout_height="@dimen/ScreenFragment_LL_Screen_height"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:clickable="true">
         <ImageView
             android:src="@drawable/left"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/ScreenFragment_iv_left_width"
+            android:layout_height="@dimen/ScreenFragment_iv_left_height"
             android:id="@+id/screen_left"/>
         <TextView
             android:id="@+id/screen_text"
             android:gravity="center"
             android:text="自动"
-            android:textSize="30sp"
-            android:layout_width="150dp"
+            android:textSize="@dimen/ScreenFragment_tv_screen_textSize"
+            android:layout_width="@dimen/ScreenFragment_tv_width"
             android:layout_height="wrap_content"/>
         <ImageView
             android:id="@+id/screen_right"
             android:src="@drawable/right"
-            android:layout_width="40dp"
-            android:layout_height="40dp"/>
+            android:layout_width="@dimen/ScreenFragment_iv_right_width"
+            android:layout_height="@dimen/ScreenFragment_iv_right_height"/>
     </LinearLayout>
 
 

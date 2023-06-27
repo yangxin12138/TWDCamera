@@ -23,48 +23,48 @@
     </LinearLayout>
     
     <LinearLayout
-        android:layout_width="280dp"
+        android:layout_width="@dimen/LL_width"
         android:layout_height="match_parent"
         android:layout_gravity="end"
-        android:background="#FFFFFF"
+        android:background="@color/LL_background"
         android:orientation="vertical"
-        android:paddingTop="50dp">
+        android:paddingTop="@dimen/LL_paddingTop">
 
         <LinearLayout
             android:id="@+id/LL_screen"
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/screen_height"
             android:clickable="true">
             <ImageView
-                android:layout_marginStart="20dp"
+                android:layout_marginStart="@dimen/screen_iv_marginStart"
                 android:src="@drawable/screen"
-                android:layout_width="40dp"
-                android:layout_height="40dp"/>
+                android:layout_width="@dimen/screen_iv_width"
+                android:layout_height="@dimen/screen_iv_height"/>
             <TextView
-                android:layout_marginStart="20dp"
-                android:textSize="25sp"
-                android:text="画面设置"
+                android:layout_marginStart="@dimen/screen_tv_marginStart"
+                android:textSize="@dimen/screen_tv_textSize"
+                android:text="@string/tv_screenMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/LL_audio"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="@dimen/audio_marginTop"
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/audio_height"
             android:clickable="true">
             <ImageView
-                android:layout_marginStart="20dp"
+                android:layout_marginStart="@dimen/audio_iv_marginStart"
                 android:src="@drawable/audio"
-                android:layout_width="40dp"
-                android:layout_height="40dp"/>
+                android:layout_width="@dimen/audio_iv_width"
+                android:layout_height="@dimen/audio_height"/>
             <TextView
-                android:layout_marginStart="20dp"
-                android:textSize="25sp"
-                android:text="音频设置"
+                android:layout_marginStart="@dimen/audio_tv_marginStart"
+                android:textSize="@dimen/audio_tv_textSize"
+                android:text="@string/tv_audioMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
         </LinearLayout>
@@ -72,6 +72,6 @@
         <FrameLayout
             android:id="@+id/fragment_container_view"
             android:layout_width="match_parent"
-            android:layout_height="200dp"/>
+            android:layout_height="@dimen/FL_height"/>
     </LinearLayout>
 </androidx.drawerlayout.widget.DrawerLayout>

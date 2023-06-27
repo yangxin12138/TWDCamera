@@ -7,15 +7,15 @@
 
 
     <TextView
-        android:textSize="21sp"
-        android:text="画面设置"
+        android:textSize="@dimen/AudioFragment_tv_textSize"
+        android:text="@string/tv_audioMenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <SeekBar
         android:id="@+id/seekbar_volume"
-        android:layout_marginTop="20dp"
-        android:layout_width="250dp"
+        android:layout_marginTop="@dimen/AudioFragment_seekbar_marginTop"
+        android:layout_width="@dimen/AudioFragment_seekbar_width"
         android:layout_height="wrap_content"
         android:max="100"
         android:progress="50"

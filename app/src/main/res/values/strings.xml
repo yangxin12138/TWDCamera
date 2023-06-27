@@ -2,4 +2,7 @@
     <string name="app_name">TWDCamera</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="tv_screenMenu">画面设置</string>
+    <string name="tv_audioMenu">音频设置</string>
+
 </resources>

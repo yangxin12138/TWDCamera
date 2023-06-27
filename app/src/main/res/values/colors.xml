@@ -3,4 +3,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#C9E3E3E3</color>
+    <color name="LL_background">#FFFFFF</color>
+
 </resources>

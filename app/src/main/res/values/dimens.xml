@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="LL_width">280dp</dimen>
+    <dimen name="LL_paddingTop">50dp</dimen>
+    <dimen name="screen_height">40dp</dimen>
+    <dimen name="screen_iv_marginStart">20dp</dimen>
+    <dimen name="screen_iv_width">40dp</dimen>
+    <dimen name="screen_iv_height">40dp</dimen>
+    <dimen name="screen_tv_marginStart">20dp</dimen>
+    <dimen name="screen_tv_textSize">25sp</dimen>
+
+    <dimen name="audio_marginTop">20dp</dimen>
+    <dimen name="audio_height">40dp</dimen>
+    <dimen name="audio_iv_marginStart">20dp</dimen>
+    <dimen name="audio_iv_width">40dp</dimen>
+    <dimen name="audio_iv_height">40dp</dimen>
+    <dimen name="audio_tv_marginStart">20dp</dimen>
+    <dimen name="audio_tv_textSize">25sp</dimen>
+
+    <dimen name="FL_height">200dp</dimen>
+
+    <dimen name="ScreenFragment_tv_textSize">21sp</dimen>
+    <dimen name="ScreenFragment_LL_Screen_width">400dp</dimen>
+    <dimen name="ScreenFragment_LL_Screen_height">100dp</dimen>
+    <dimen name="ScreenFragment_iv_left_width">40dp</dimen>
+    <dimen name="ScreenFragment_iv_left_height">40dp</dimen>
+    <dimen name="ScreenFragment_iv_right_width">40dp</dimen>
+    <dimen name="ScreenFragment_iv_right_height">40dp</dimen>
+    <dimen name="ScreenFragment_tv_screen_textSize">30sp</dimen>
+    <dimen name="ScreenFragment_tv_width">150dp</dimen>
+
+    <dimen name="AudioFragment_tv_textSize">21sp</dimen>
+    <dimen name="AudioFragment_seekbar_marginTop">20dp</dimen>
+    <dimen name="AudioFragment_seekbar_width">250dp</dimen>
+</resources>
