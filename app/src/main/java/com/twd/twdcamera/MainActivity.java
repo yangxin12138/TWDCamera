@@ -15,17 +15,24 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.twd.twdcamera.utils.ScreenUtils;
+
 import java.util.concurrent.ExecutionException;
 
 
@@ -42,6 +49,11 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
     private FrameLayout frameLayout;
     private boolean flag = true;
     private boolean isIndex = true;
+    private String[] ScreenIndex = {
+            "自动",
+            "1280*720",
+            "1920*1080"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +74,57 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
         }else {
             //如果没有，则请求相机权限
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.CAMERA},100);
+        }
+
+        //TODO:初始化预览画面大小
+        SharedPreferences sharedPreferences = getSharedPreferences("ScreenSizePreferences", Context.MODE_PRIVATE);
+        int index = sharedPreferences.getInt("index",0);
+
+        //获取屏幕的宽度和高度
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        int screenWidth = displayMetrics.widthPixels;
+        int screenHeight = displayMetrics.heightPixels;
+        ScreenUtils su = new ScreenUtils(previewView,screenWidth,screenHeight);
+        su.updateSize(ScreenIndex[index]);
+    }
+
+    private void initSize(String item){
+
+        //获取屏幕的宽度和高度
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        int screenWidth = displayMetrics.widthPixels;
+        int screenHeight = displayMetrics.heightPixels;
+
+        ViewGroup.LayoutParams layoutParams = previewView.getLayoutParams();
+        if ("1280*720".equals(item)) {
+            float aspectRatio4x3 = 4f / 3f;
+            int targetWidth4x3 = screenWidth;
+            int targetHeight4x3 = (int) (targetWidth4x3 / aspectRatio4x3);
+            if (targetHeight4x3 > screenHeight) {
+                targetHeight4x3 = screenHeight;
+                targetWidth4x3 = (int) (targetHeight4x3 * aspectRatio4x3);
+            }
+            layoutParams.width = targetWidth4x3;
+            layoutParams.height = targetHeight4x3;
+            previewView.setLayoutParams(layoutParams);
+            Log.i("yang", "------首页切换到720------" + "width:" + layoutParams.width + ",height:" + layoutParams.height);
+        } else if ("1920*1080".equals(item)) {
+            float aspectRatio16x9 = 16f / 9f;
+            int targetWidth16x9 = screenWidth;
+            int targetHeight16x9 = (int) (targetWidth16x9 / aspectRatio16x9);
+            if (targetHeight16x9 > screenHeight) {
+                targetHeight16x9 = screenHeight;
+                targetWidth16x9 = (int) (targetHeight16x9 * aspectRatio16x9);
+            }
+            layoutParams.width = targetWidth16x9;
+            layoutParams.height = targetHeight16x9;
+            previewView.setLayoutParams(layoutParams);
+            Log.i("yang", "------首页切换到1080------" + "width:" + layoutParams.width + ",height:" + layoutParams.height);
+        } else if ("自动".equals(item)) {
+            layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            previewView.setLayoutParams(layoutParams);
+            Log.i("yang", "------首页切换到Auto------" + "width:" + layoutParams.width + ",height:" + layoutParams.height);
         }
     }
 
@@ -84,14 +147,14 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
                 * 避免无相机异常
                 * */
                 CameraSelector cameraSelector  = new CameraSelector.Builder()
-                        .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+                        .requireLensFacing(CameraSelector.LENS_FACING_FRONT) //选择前摄
                         .build();
 
                 if (cameraProvider.hasCamera(cameraSelector)){
                     cameraProvider.unbindAll();
                     cameraProvider.bindToLifecycle(this,cameraSelector,preview);
                 } else {
-                    Toast.makeText(this, "No back camera found", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "No front camera found", Toast.LENGTH_SHORT).show();
                 }
             }catch (ExecutionException | InterruptedException | IllegalArgumentException |
                     CameraInfoUnavailableException e){
