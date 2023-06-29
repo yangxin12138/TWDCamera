@@ -54,7 +54,6 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         SharedPreferences sharedPreferences = getActivity().getApplication().getSharedPreferences("ScreenSizePreferences",Context.MODE_PRIVATE);
         int index = sharedPreferences.getInt("index",0);
         screen_text.setText(screenSizes.get(index));
-        Log.i("yang","初始化text："+screen_text.getText().toString());
 
         //获取屏幕的宽度和高度
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
@@ -62,14 +61,12 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         int screenHeight = displayMetrics.heightPixels;
         utils = new ScreenUtils(previewView,screenWidth,screenHeight);
         utils.updateSize(screen_text.getText().toString());
-        //updateSize(screen_text.getText().toString());
         return view;
     }
 
     @Override
     public void onFocusChange(View v, boolean hasFocus) {
         if (hasFocus){
-            Log.i("yang","---------focus-fragment-------");
             v.setBackgroundColor(getResources().getColor(R.color.gray));
             if (v.getId() == R.id.LL_screen){
                 v.setOnKeyListener(new View.OnKeyListener() {
@@ -91,7 +88,6 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
                 });
             }
         } else {
-            Log.i("yang","----------noFocus--------");
             v.setBackgroundColor(getResources().getColor(R.color.white));
         }
     }
@@ -114,9 +110,6 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
 
         switch (item){
             case "1280*720":
-                /*layoutParams.width = 960;
-                layoutParams.height = 720;
-                previewView.setLayoutParams(layoutParams);*/
                 float aspectRatio4x3 = 4f / 3f;
                 int targetWidth4x3 = screenWidth;
                 int targetHeight4x3 = (int) (targetWidth4x3 / aspectRatio4x3);
@@ -127,11 +120,8 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
                 layoutParams.width = targetWidth4x3;
                 layoutParams.height = targetHeight4x3;
                 previewView.setLayoutParams(layoutParams);
-                Log.i("yang","------切换到720------"+"width:"+layoutParams.width+",height:"+layoutParams.height);
                 break;
             case "1920*1080":
-                /*layoutParams.width = 960;
-                layoutParams.height = 540;*/
                 float aspectRatio16x9 = 16f / 9f;
                 int targetWidth16x9 = screenWidth;
                 int targetHeight16x9 = (int) (targetWidth16x9 / aspectRatio16x9);
@@ -142,17 +132,16 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
                 layoutParams.width = targetWidth16x9;
                 layoutParams.height = targetHeight16x9;
                 previewView.setLayoutParams(layoutParams);
-                Log.i("yang","------切换到1080------"+"width:"+layoutParams.width+",height:"+layoutParams.height);
                 break;
             case "自动":
                 layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
                 layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 previewView.setLayoutParams(layoutParams);
-                Log.i("yang","------切换到Auto------"+"width:"+layoutParams.width+",height:"+layoutParams.height);
                 break;
         }
     }
 
+    /*向左循环遍历*/
     private void updateLeft(){
         currentIndex --;
         if (currentIndex < 0){
@@ -162,10 +151,10 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         String item = screenSizes.get(currentIndex);
         screen_text.setText(item);
         //TODO:底层代码控制切换分辨率
-        //updateSize(item);
         utils.updateSize(item);
     }
 
+    /*向右循环遍历*/
     private void updateRight(){
         currentIndex++;
         if (currentIndex >= screenSizes.size()){
@@ -175,7 +164,6 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         String item = screenSizes.get(currentIndex);
         screen_text.setText(item);
         //TODO:底层代码控制切换分辨率
-//        updateSize(item);
         utils.updateSize(item);
     }
 }

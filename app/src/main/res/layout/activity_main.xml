@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:id="@+id/drawer_layout">
+    android:id="@+id/drawer_layout"
+    android:background="@color/white">
 
     <!-- 主要内容布局 -->
     <LinearLayout
@@ -13,8 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center"
-        android:background="@color/white">
+        android:gravity="center">
 
         <!--TODO:调用相机画面-->
         <androidx.camera.view.PreviewView

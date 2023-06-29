@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
         initMainView();
     }
 
+    /* 加载主内容区*/
     private void initMainView(){
         //获取previewView和LinearLayout的实例
         previewView = findViewById(R.id.cameraView);
@@ -107,7 +108,6 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
             layoutParams.width = targetWidth4x3;
             layoutParams.height = targetHeight4x3;
             previewView.setLayoutParams(layoutParams);
-            Log.i("yang", "------首页切换到720------" + "width:" + layoutParams.width + ",height:" + layoutParams.height);
         } else if ("1920*1080".equals(item)) {
             float aspectRatio16x9 = 16f / 9f;
             int targetWidth16x9 = screenWidth;
@@ -119,15 +119,14 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
             layoutParams.width = targetWidth16x9;
             layoutParams.height = targetHeight16x9;
             previewView.setLayoutParams(layoutParams);
-            Log.i("yang", "------首页切换到1080------" + "width:" + layoutParams.width + ",height:" + layoutParams.height);
         } else if ("自动".equals(item)) {
             layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
             layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
             previewView.setLayoutParams(layoutParams);
-            Log.i("yang", "------首页切换到Auto------" + "width:" + layoutParams.width + ",height:" + layoutParams.height);
         }
     }
 
+    /* 相机调用*/
     private void startCamera(){
 
         cameraProviderFutures = ProcessCameraProvider.getInstance(this);
@@ -163,6 +162,7 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
         },ContextCompat.getMainExecutor(this));
     }
 
+    /* 判断相机权限*/
     private boolean allPermissionsGranted(){
         return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
     }
@@ -229,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements View.OnFocusChang
         }
     }
 
+    /* 加载菜单fragment到FrameLayout*/
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.LL_screen) {
