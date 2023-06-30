@@ -52,8 +52,8 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
 
         //TODO:初始化读取text
         SharedPreferences sharedPreferences = getActivity().getApplication().getSharedPreferences("ScreenSizePreferences",Context.MODE_PRIVATE);
-        int index = sharedPreferences.getInt("index",0);
-        screen_text.setText(screenSizes.get(index));
+        currentIndex = sharedPreferences.getInt("index",0);
+        screen_text.setText(screenSizes.get(currentIndex));
 
         //获取屏幕的宽度和高度
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
