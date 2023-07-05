@@ -7,6 +7,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -27,7 +28,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
     private LinearLayout LLScreen;
     private TextView screen_text;
 
-    private PreviewView previewView;
+    private SurfaceView mSurfaceView;
 
     List<String> screenSizes = new ArrayList<>();
     int currentIndex = 0;
@@ -40,7 +41,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout_screen,container,false);
-        previewView = getActivity().findViewById(R.id.cameraView);
+        mSurfaceView = getActivity().findViewById(R.id.cameraView);
         LLScreen = view.findViewById(R.id.LL_screen);
         screen_text = view.findViewById(R.id.screen_text);
         screenSizes.add("自动");
@@ -48,7 +49,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         screenSizes.add("1920*1080");
         LLScreen.setOnFocusChangeListener(this);
 
-        layoutParams = previewView.getLayoutParams();
+        layoutParams = mSurfaceView.getLayoutParams();
 
         //TODO:初始化读取text
         SharedPreferences sharedPreferences = getActivity().getApplication().getSharedPreferences("ScreenSizePreferences",Context.MODE_PRIVATE);
@@ -59,7 +60,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         int screenWidth = displayMetrics.widthPixels;
         int screenHeight = displayMetrics.heightPixels;
-        utils = new ScreenUtils(previewView,screenWidth,screenHeight);
+        utils = new ScreenUtils(mSurfaceView,screenWidth,screenHeight);
         utils.updateSize(screen_text.getText().toString());
         return view;
     }
@@ -99,46 +100,6 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         SharedPreferences.Editor editor = getActivity().getApplication().getSharedPreferences("ScreenSizePreferences", Context.MODE_PRIVATE).edit();
         editor.putInt("index",currentIndex);
         editor.apply();
-    }
-
-    private void updateSize(String item){
-
-        //获取屏幕的宽度和高度
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        int screenWidth = displayMetrics.widthPixels;
-        int screenHeight = displayMetrics.heightPixels;
-
-        switch (item){
-            case "1280*720":
-                float aspectRatio4x3 = 4f / 3f;
-                int targetWidth4x3 = screenWidth;
-                int targetHeight4x3 = (int) (targetWidth4x3 / aspectRatio4x3);
-                if (targetHeight4x3 > screenHeight) {
-                    targetHeight4x3 = screenHeight;
-                    targetWidth4x3 = (int) (targetHeight4x3 * aspectRatio4x3);
-                }
-                layoutParams.width = targetWidth4x3;
-                layoutParams.height = targetHeight4x3;
-                previewView.setLayoutParams(layoutParams);
-                break;
-            case "1920*1080":
-                float aspectRatio16x9 = 16f / 9f;
-                int targetWidth16x9 = screenWidth;
-                int targetHeight16x9 = (int) (targetWidth16x9 / aspectRatio16x9);
-                if (targetHeight16x9 > screenHeight) {
-                    targetHeight16x9 = screenHeight;
-                    targetWidth16x9 = (int) (targetHeight16x9 * aspectRatio16x9);
-                }
-                layoutParams.width = targetWidth16x9;
-                layoutParams.height = targetHeight16x9;
-                previewView.setLayoutParams(layoutParams);
-                break;
-            case "自动":
-                layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
-                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
-                previewView.setLayoutParams(layoutParams);
-                break;
-        }
     }
 
     /*向左循环遍历*/

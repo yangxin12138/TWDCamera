@@ -17,7 +17,7 @@
         android:gravity="center">
 
         <!--TODO:调用相机画面-->
-        <androidx.camera.view.PreviewView
+        <SurfaceView
             android:id="@+id/cameraView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
