@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -28,7 +29,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
     private LinearLayout LLScreen;
     private TextView screen_text;
 
-    private SurfaceView mSurfaceView;
+    private TextureView mTextureView;
 
     List<String> screenSizes = new ArrayList<>();
     int currentIndex = 0;
@@ -41,7 +42,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.layout_screen,container,false);
-        mSurfaceView = getActivity().findViewById(R.id.cameraView);
+        mTextureView = getActivity().findViewById(R.id.cameraView);
         LLScreen = view.findViewById(R.id.LL_screen);
         screen_text = view.findViewById(R.id.screen_text);
         screenSizes.add("自动");
@@ -49,7 +50,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         screenSizes.add("1920*1080");
         LLScreen.setOnFocusChangeListener(this);
 
-        layoutParams = mSurfaceView.getLayoutParams();
+        layoutParams = mTextureView.getLayoutParams();
 
         //TODO:初始化读取text
         SharedPreferences sharedPreferences = getActivity().getApplication().getSharedPreferences("ScreenSizePreferences",Context.MODE_PRIVATE);
@@ -60,7 +61,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         int screenWidth = displayMetrics.widthPixels;
         int screenHeight = displayMetrics.heightPixels;
-        utils = new ScreenUtils(mSurfaceView,screenWidth,screenHeight);
+        utils = new ScreenUtils(mTextureView,screenWidth,screenHeight);
         utils.updateSize(screen_text.getText().toString());
         return view;
     }

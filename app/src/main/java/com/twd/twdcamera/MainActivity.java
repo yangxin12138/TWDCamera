@@ -13,9 +13,11 @@ import androidx.fragment.app.FragmentTransaction;
 
 import android.Manifest;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Bundle;
 
@@ -24,6 +26,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.view.View;
 
 import android.view.ViewGroup;
@@ -44,9 +47,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private LinearLayout LLScreen;
     private LinearLayout LLAudio;
 
-    private SurfaceView mSurfaceView;
+    private TextureView mTextureView;
     private Camera mCamera;
     private SurfaceHolder mSurfaceHolder;
+    private Context context = this;
 
 
     private LinearLayout content_frame;
@@ -70,18 +74,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         //初始化SurfaceView
-        mSurfaceView = findViewById(R.id.cameraView);
-        //获取SurfaceHolder对象
-        mSurfaceHolder = mSurfaceView.getHolder();
-        mSurfaceHolder.addCallback(this);
-        initView();
-        initMainView();
-    }
-
-    /* 加载主内容区*/
-    private void initMainView(){
+        mTextureView = findViewById(R.id.cameraView);
+        mTextureView.setSurfaceTextureListener(surfaceTextureListener);
         //获取LinearLayout的实例
         content_frame = findViewById(R.id.content_frame);
+
         //TODO:初始化预览画面大小
         SharedPreferences sharedPreferences = getSharedPreferences("ScreenSizePreferences", Context.MODE_PRIVATE);
         int index = sharedPreferences.getInt("index",0);
@@ -90,9 +87,82 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         int screenWidth = displayMetrics.widthPixels;
         int screenHeight = displayMetrics.heightPixels;
-        su = new ScreenUtils(mSurfaceView,screenWidth,screenHeight);
+        su = new ScreenUtils(mTextureView,screenWidth,screenHeight);
         su.updateSize(ScreenIndex[index]);
+        initView();
     }
+
+    private TextureView.SurfaceTextureListener surfaceTextureListener = new TextureView.SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
+            int number = Camera.getNumberOfCameras();
+            if (allPermissionsGranted()){
+                if ( number != 0){
+                    mCamera = Camera.open(); //打开相机
+                    try {
+                        mCamera.setPreviewTexture(surface);
+                        mCamera.startPreview();
+                    }catch (IOException e){
+                        e.printStackTrace();
+                    }
+                }else { Log.i("yang","onSurfaceTextureAvailable:没有可用相机");}
+            }else {
+                //如果没有，则请求相机权限
+                ActivityCompat.requestPermissions((Activity) context,new String[]{Manifest.permission.CAMERA},100);
+            }
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
+            Log.i("yang","onSurfaceTextureSizeChanged:纹理大小发生变化"+width+","+height);
+            // 纹理大小发生变化时的处理
+            try {
+                mCamera.stopPreview();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+            try {
+                //检查是否获取相机权限
+                if (allPermissionsGranted()){
+                    //获取相机的可用预览尺寸列表
+                    Camera.Parameters parameters = mCamera.getParameters();
+                    List<Camera.Size> supportedSize = parameters.getSupportedPreviewSizes();
+                    Camera.Size bestSize = null;
+                    float targetRatio = 16f / 9;
+                    float minDiff = Float.MAX_VALUE;
+                    for (Camera.Size size : supportedSize){
+                        float ratio = (float) size.width / size.height;
+                        if (Math.abs(ratio - targetRatio) < minDiff){
+                            bestSize = size;
+                            minDiff = Math.abs(ratio - targetRatio);
+                        }
+                    }
+                    //设置预览尺寸
+                    parameters.setPreviewSize(bestSize.width,bestSize.height);
+                    mCamera.setParameters(parameters);
+                    mCamera.startPreview();
+                }else {
+                    //如果没有，则请求相机权限
+                    ActivityCompat.requestPermissions((Activity) context,new String[]{Manifest.permission.CAMERA},100);
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
+            mCamera.stopPreview(); //停止预览
+            mCamera.release(); //释放资源
+            return true;
+        }
+
+        @Override
+        public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+            // 纹理数据更新时的处理，可以在这里进行图像处理等操作
+        }
+    };
 
     /* 判断相机权限*/
     private boolean allPermissionsGranted(){
@@ -185,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             int number = Camera.getNumberOfCameras();
             if (number != 0){
                 //打开相机并设置预览
+//                mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
                 mCamera = Camera.open();
                 Log.i("yang","相机可用");
                 try {
@@ -205,10 +276,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-
+/*
         ViewGroup.LayoutParams  layoutParams = su.getLayoutParams();
         int viewWidth = layoutParams.width;
-        int viewHeight = layoutParams.height;
+        int viewHeight = layoutParams.height;*/
         //处理SurfaceView尺寸变化
         if (mSurfaceHolder.getSurface() == null){
             return;
@@ -225,27 +296,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Camera.Parameters parameters = mCamera.getParameters();
                 List<Camera.Size> supportedSize = parameters.getSupportedPreviewSizes();
                 Camera.Size bestSize =  null;
-                if (viewWidth / viewHeight == 4 / 3){
-                    //选择最接近4：3比例的尺寸
-                    float targetRatio = 4f / 3;
-                    float minDiff = Float.MAX_VALUE;
-                    for (Camera.Size size : supportedSize){
-                        float ratio = (float) size.width / size.height;
-                        if (Math.abs(ratio - targetRatio)<minDiff){
-                            bestSize = size;
-                            minDiff = Math.abs(ratio-targetRatio);
-                        }
-                    }
-                } else if (viewWidth / viewHeight == 16 / 9) {
-                    //选择最接近16：9比例的尺寸
-                    float targetRatio = 16f / 9;
-                    float minDiff = Float.MAX_VALUE;
-                    for (Camera.Size size : supportedSize){
-                        float ratio = (float) size.width / size.height;
-                        if (Math.abs(ratio - targetRatio)<minDiff){
-                            bestSize = size;
-                            minDiff = Math.abs(ratio-targetRatio);
-                        }
+                float targetRatio = 16f / 9;
+                float minDiff = Float.MAX_VALUE;
+                for (Camera.Size size : supportedSize){
+                    float ratio = (float) size.width / size.height;
+                    if (Math.abs(ratio - targetRatio)<minDiff){
+                        bestSize = size;
+                        minDiff = Math.abs(ratio-targetRatio);
                     }
                 }
                 //设置预览尺寸
