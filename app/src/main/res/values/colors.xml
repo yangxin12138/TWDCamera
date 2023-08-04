@@ -4,5 +4,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#C9E3E3E3</color>
     <color name="LL_background">#FFFFFF</color>
-
+    <color name="menuBackground">#2E2E2E</color>
 </resources>

@@ -3,13 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center">
-
-    <TextView
-        android:textSize="@dimen/ScreenFragment_tv_textSize"
-        android:text="@string/tv_screenMenu"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    android:gravity="center"
+    android:background="@color/menuBackground">
 
     <LinearLayout
         android:id="@+id/LL_screen"
@@ -28,6 +23,7 @@
             android:id="@+id/screen_text"
             android:gravity="center"
             android:text="自动"
+            android:textColor="@color/white"
             android:textSize="@dimen/ScreenFragment_tv_screen_textSize"
             android:layout_width="@dimen/ScreenFragment_tv_width"
             android:layout_height="wrap_content"/>

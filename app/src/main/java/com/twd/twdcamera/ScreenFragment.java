@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -16,7 +15,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.camera.view.PreviewView;
 import androidx.fragment.app.Fragment;
 
 import com.twd.twdcamera.utils.ScreenUtils;
@@ -29,7 +27,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
     private LinearLayout LLScreen;
     private TextView screen_text;
 
-    private TextureView mTextureView;
+    private SurfaceView mTextureView;
 
     List<String> screenSizes = new ArrayList<>();
     int currentIndex = 0;
@@ -46,8 +44,8 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
         LLScreen = view.findViewById(R.id.LL_screen);
         screen_text = view.findViewById(R.id.screen_text);
         screenSizes.add("自动");
-        screenSizes.add("1280*720");
-        screenSizes.add("1920*1080");
+        screenSizes.add("4:3");
+        screenSizes.add("16:9");
         LLScreen.setOnFocusChangeListener(this);
 
         layoutParams = mTextureView.getLayoutParams();
@@ -70,6 +68,7 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
     public void onFocusChange(View v, boolean hasFocus) {
         if (hasFocus){
             v.setBackgroundColor(getResources().getColor(R.color.gray));
+            screen_text.setTextColor(getResources().getColor(R.color.black));
             if (v.getId() == R.id.LL_screen){
                 v.setOnKeyListener(new View.OnKeyListener() {
                     @Override
@@ -90,7 +89,8 @@ public class ScreenFragment extends Fragment implements View.OnFocusChangeListen
                 });
             }
         } else {
-            v.setBackgroundColor(getResources().getColor(R.color.white));
+            v.setBackgroundColor(getResources().getColor(R.color.menuBackground));
+            screen_text.setTextColor(getResources().getColor(R.color.gray));
         }
     }
 
