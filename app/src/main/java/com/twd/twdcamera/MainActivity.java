@@ -1,6 +1,7 @@
 package com.twd.twdcamera;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.core.content.ContextCompat;
@@ -38,6 +39,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.twd.twdcamera.utils.ScreenUtils;
 import com.twd.twdcamera.utils.SystemPropertiesUtils;
@@ -110,6 +112,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     protected void onDestroy() {
+        if (camera != null){
+            camera.stopPreview();
+            camera.setPreviewCallback(null);
+            camera.release();
+            camera = null;
+        }
         super.onDestroy();
     }
 
@@ -148,41 +156,47 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             public void run() {
                 previousResolution = ReadHdmiInfo(HDMI_FILE_PATH);
                 try {
-                    Thread.sleep(5000); // 等待1秒
+                    Thread.sleep(3000); // 等待1秒
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
                 while (true){
                     String currentResolution = ReadHdmiInfo(HDMI_FILE_PATH);
                     Log.i(TAG, "run: 外部currentResolution:"+currentResolution+",previous:"+previousResolution);
-                    if (currentResolution != null && ! currentResolution.equals(previousResolution) && ! currentResolution.equals("9") ){
+                    if (currentResolution != null && ! currentResolution.equals(previousResolution) && ! currentResolution.equals("10") ){
                         Log.i(TAG, "run: currentResolution = "+ currentResolution + ", previousResolution = "+previousResolution);
                         previousResolution = currentResolution;
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
-                                //关闭相机服务
-                                SystemPropertiesUtils.setProperties("ctl.stop","media");
-                                //开启相机服务
-                                SystemPropertiesUtils.setProperties("ctl.start","media");
-                                try {
-                                    Thread.sleep(3000);
-                                }catch (Exception e){e.printStackTrace();}
-                                finish();
-                                /*Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                startActivity(intent);*/
-                                Intent intent = getPackageManager().getLaunchIntentForPackage("com.twd.hdmi_loading");
-                                if (intent != null){
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                    startActivity(intent);
+
+                                camera.stopPreview();
+                                camera.release();
+                                camera=null;
+                                if (camera == null) {
+                                    Log.i(TAG, "surfaceCreated: previousResolution = " + previousResolution);
+                                    try {
+                                        camera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+                                        camera.setPreviewDisplay(holder);
+                                        Camera.Parameters parameters = camera.getParameters();
+                                        ViewGroup.LayoutParams layoutParams = mSurfaceView.getLayoutParams();
+                                        Log.i(TAG, "surfaceCreated: size" + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
+
+                                        camera.startPreview();
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
+                                Camera.Parameters parameters = camera.getParameters();
+                                parameters.setPreviewSize(1920,1080);
+                                camera.setParameters(parameters);
                                 error_tip.setVisibility(View.GONE);
                                 mSurfaceView.setVisibility(View.VISIBLE);
+                                camera.startPreview();
                             }
                         });
                         Log.i(TAG, "run: 修改后的分辨率 = " + previousResolution);
-                    } else if (currentResolution.equals("9")) {
+                    } else if (currentResolution.equals("10")) {
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -190,7 +204,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                                 mSurfaceView.setVisibility(View.GONE);
                             }
                         });
-
                     }
                     try {
                         Thread.sleep(1000); // 等待1秒
@@ -222,22 +235,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         return true;
                     }
                     break;
-                /*case KeyEvent.KEYCODE_ENTER:
-                    //关闭相机服务
-                    SystemPropertiesUtils.setProperties("ctl.stop","media");
-                    //开启相机服务
-                    SystemPropertiesUtils.setProperties("ctl.start","media");
-                    try {
-                        Thread.sleep(3000);
-                    }catch (Exception e){e.printStackTrace();}
-                    finish();
-                    try {
-                        Thread.sleep(3000);
-                    }catch (Exception e){e.printStackTrace();}
-                    Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
-                    break;*/
             }
         }
         return super.dispatchKeyEvent(event);
@@ -286,7 +283,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private String ReadHdmiInfo(String filePath){
         try {
-            Thread.sleep(3000);
             //创建文件对象
             File file = new File(filePath);
             //创建文件读取对象
@@ -306,20 +302,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         return null;
     }
 
-    private void RestartHDMI(){
-        // 关闭相机服务
-        SystemPropertiesUtils.setProperties("ctl.stop","media");
-        Log.i(TAG, "RestartHDMI: 关闭相机服务");
-        // 开启相机服务
-        SystemPropertiesUtils.setProperties("ctl.start","media");
-        Log.i(TAG, "RestartHDMI: 开启相机服务");
-
-        // 重启应用程序
-        Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(intent);
-    }
-
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         previousResolution = ReadHdmiInfo(HDMI_FILE_PATH);
@@ -331,50 +313,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     Camera.Parameters parameters = camera.getParameters();
                     ViewGroup.LayoutParams layoutParams = mSurfaceView.getLayoutParams();
                     Log.i(TAG, "surfaceCreated: size" + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
-
-
-                    /*camera.setPreviewCallback(new Camera.PreviewCallback() {
-                        @Override
-                        public void onPreviewFrame(byte[] data, Camera camera) {
-                            String currentResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                            if (currentResolution != null && ! currentResolution.equals(previousResolution)){
-                                camera.stopPreview();
-                                // 关闭相机服务
-                                SystemPropertiesUtils.setProperties("ctl.stop","media");
-                                Log.i(TAG, "RestartHDMI: 关闭相机服务");
-                                try {
-                                    Thread.sleep(2000); // 延时1秒
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                                // 开启相机服务
-                                SystemPropertiesUtils.setProperties("ctl.start","media");
-                                Log.i(TAG, "RestartHDMI: 开启相机服务");
-
-                                // 重启应用程序
-                                Intent intent = getBaseContext().getPackageManager().getLaunchIntentForPackage(getBaseContext().getPackageName());
-                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                startActivity(intent);
-                                Log.i(TAG, "onPreviewFrame: currentResolution = "+ currentResolution + ", previousResolution = "+previousResolution);
-                                previousResolution = currentResolution;
-                                Log.i(TAG, "onPreviewFrame: 修改后的分辨率 = " + previousResolution);
-                            }
-                        }
-                    });*/
-                    Thread.sleep(3000);
                     camera.startPreview();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-    }
-
-    public void simulateKeyPress(int keyCode) {
-        // 创建一个新的KeyEvent实例表示按下按键事件
-        KeyEvent keyDownEvent = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
-
-        // 调用dispatchKeyEvent()方法，传递按下按键事件
-        dispatchKeyEvent(keyDownEvent);
     }
 
     @Override
@@ -385,6 +328,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+        if (camera != null){
+            camera.stopPreview();
+            camera.setPreviewCallback(null);
+            camera.release();
+            camera = null;
+        }
         Log.i(TAG, "surfaceDestroyed: 调用画面被回收");
     }
 }
