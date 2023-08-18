@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private boolean mRunningFlag=false;
 
     private FrameLayout frameLayout;
-    private ImageView error_tip;
+    private ImageView loading_tip;
     private boolean flag = true;
     private boolean isIndex = true;
     private ScreenUtils su;
@@ -154,9 +154,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         tv_title_screen = findViewById(R.id.tv_title_screen);
 
         frameLayout = findViewById(R.id.fragment_container_view);
-        error_tip = findViewById(R.id.error_tip);
+        loading_tip = findViewById(R.id.loading_tip);
 
-        error_tip.setVisibility(View.VISIBLE);
+        loading_tip.setVisibility(View.VISIBLE);
         mSurfaceView.setVisibility(View.GONE);
 
         Handler handler = new Handler(Looper.getMainLooper());
@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         @Override
                         public void run() {
                             Log.i(TAG, "run: mSurfaceView set View.VISIBLE");
-                            error_tip.setVisibility(View.GONE);
+                            loading_tip.setVisibility(View.GONE);
                             mSurfaceView.setVisibility(View.VISIBLE);
                         }
                     });
@@ -214,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
-                                error_tip.setVisibility(View.VISIBLE);
+                                loading_tip.setVisibility(View.VISIBLE);
                                 mSurfaceView.setVisibility(View.GONE);
                             }
                         });
@@ -300,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 mCamera.setParameters(parameters);
                 mCamera.setPreviewDisplay(mSurfaceholder);
                 mCamera.startPreview();
-                error_tip.setVisibility(View.GONE);
+                loading_tip.setVisibility(View.GONE);
                 mSurfaceView.setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {

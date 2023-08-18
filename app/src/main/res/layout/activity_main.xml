@@ -18,11 +18,11 @@
         android:background="@color/black">
 
         <ImageView
-            android:id="@+id/error_tip"
+            android:id="@+id/loading_tip"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"
-            android:src="@drawable/error_tip"/>
+            android:src="@drawable/loading_tip"/>
 
         <!--TODO:调用相机画面-->
         <SurfaceView
