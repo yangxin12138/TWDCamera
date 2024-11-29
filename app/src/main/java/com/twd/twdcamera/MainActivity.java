@@ -40,6 +40,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.twd.twdcamera.utils.ScreenUtils;
+import com.twd.twdcamera.utils.SystemPropertiesUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             "16:9"// 16:9
     };
     private static final String HDMI_FILE_PATH = "/sys/hdmi/resolution";
+    private static final String HDMI_ACTIVITY = "persist.ty.hdmiin";
     static String previousResolution;
     static String currentResolution;
     private Handler mHandler = new Handler();
@@ -114,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Log.i(TAG, "onCreate: -------启动-----");
         //保持屏幕常亮
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
         //初始化SurfaceView
         mSurfaceView = findViewById(R.id.cameraView);
         mSurfaceView.setBackgroundColor(Color.TRANSPARENT);
@@ -146,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mCamera = null;
         }
         mRunningFlag = false;
+        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");
 //        if (mThread != null) {
 //            mThread.stop();
 //            mThread = null;
@@ -274,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mCamera = null;
         }
         mRunningFlag = false;
+        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");//hdmi是否处于前台活动，1为活动，0为未活动
     }
 
     private void openCamera() {
