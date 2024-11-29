@@ -17,13 +17,13 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/icon_hdmi_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/icon_hdmi_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.TWDCamera"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

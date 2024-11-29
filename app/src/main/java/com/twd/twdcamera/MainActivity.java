@@ -13,6 +13,7 @@ import android.Manifest;
 
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -83,8 +84,32 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private Handler mHandler = new Handler();
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // 检查Intent的来源，判断是否是从其他应用返回
+        if (intent.getFlags() == Intent.FLAG_ACTIVITY_RETAIN_IN_RECENTS) {
+            // 在这里可以进行重新初始化等操作，相当于重新打开应用
+            Log.i(TAG, "onNewIntent: -----------检测到从其他地方返回");
+            initTask();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume: -------onResume-----返回");
+        initTask();
+    }
+
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(TAG, "onCreate: -------activity---开始");
+        initTask();
+    }
+    
+    private void initTask(){
         setContentView(R.layout.activity_main);
         Log.i(TAG, "onCreate: -------启动-----");
         //保持屏幕常亮
@@ -236,6 +261,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mThread.start();
         }
 
+    }
+
+    @Override
+    protected void onPause() {
+        Log.i(TAG, "onPause: ---暂停了------");
+        super.onPause();
+        if (mCamera != null){
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.release();
+            mCamera = null;
+        }
+        mRunningFlag = false;
     }
 
     private void openCamera() {
