@@ -14,14 +14,18 @@ import android.Manifest;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.media.AudioManager;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Message;
 import android.util.DisplayMetrics;
 
 import android.util.Log;
@@ -39,6 +43,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.twd.twdcamera.receiver.CameraBroadcastReceiver;
 import com.twd.twdcamera.utils.ScreenUtils;
 import com.twd.twdcamera.utils.SystemPropertiesUtils;
 
@@ -83,7 +88,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private static final String HDMI_ACTIVITY = "persist.ty.hdmiin";
     static String previousResolution;
     static String currentResolution;
-    private Handler mHandler = new Handler();
+    private CameraBroadcastReceiver cameraReceiver;
+    public static final int MSG_OPEN_CAMERA = 1;
+    public static final int MSG_CLOSE_CAMERA = 2;
+    private Handler mHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(@NonNull Message msg) {
+            switch (msg.what){
+                case MSG_CLOSE_CAMERA:
+                    closeCamera();
+                    break;
+                case MSG_OPEN_CAMERA:
+                    reOpenCamera();
+                    break;
+            }
+            return true;
+        }
+    });
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -136,6 +157,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         su = new ScreenUtils(mSurfaceView, screenWidth, screenHeight);
         su.updateSize(ScreenIndex[index]);
         initView();
+
+        // 创建广播接收器实例，并传入 Handler
+        cameraReceiver = new CameraBroadcastReceiver(mHandler);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(CameraBroadcastReceiver.ACTION_OPEN_CAMERA);
+        filter.addAction(CameraBroadcastReceiver.ACTION_CLOSE_CAMERA);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(cameraReceiver, filter, AppCompatActivity.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(cameraReceiver, filter);
+        }
+
     }
 
     @Override
@@ -149,10 +183,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
         mRunningFlag = false;
         SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");
-//        if (mThread != null) {
-//            mThread.stop();
-//            mThread = null;
-//        }
+        unregisterReceiver(cameraReceiver);
         super.onDestroy();
     }
 
@@ -196,13 +227,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 openCamera();
 
-//                handler.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        Log.i(TAG, "run: handler openCamera");
-//                        openCamera();
-//                    }
-//                });
 
                 try {
                     Thread.sleep(1000);
@@ -280,6 +304,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");//hdmi是否处于前台活动，1为活动，0为未活动
     }
 
+    private void closeCamera(){
+        Log.i("CameraBroadcastReceiver","----执行closeCamera----");
+        if (mCamera != null){
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.release();
+            mCamera = null;
+        }
+        mRunningFlag = false;
+        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");//hdmi是否处于前台活动，1为活动，0为未活动
+        loading_tip.setVisibility(View.VISIBLE);
+        mSurfaceView.setVisibility(View.GONE);
+    }
+
     private void openCamera() {
         if (mCamera == null) {
             Log.i(TAG, "openCamera: ");
@@ -293,41 +331,26 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
-//    private void reopenCamera() {
-//        Log.i(TAG, "reopenCamera: ");
-//        if (mCamera != null) {
-//            mCamera.stopPreview();
-//            mCamera.setPreviewCallback(null);
-//            mCamera.release();
-//            mCamera = null;
-//        }
-//        if (mCamera == null) {
-//
-//            try {
-//                mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
-//                mCamera.setPreviewDisplay(holder);
-//                Camera.Parameters parameters = mCamera.getParameters();
-//                ViewGroup.LayoutParams layoutParams = mSurfaceView.getLayoutParams();
-//                Log.i(TAG, "surfaceCreated: size" + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
-//
-//                parameters.setPreviewSize(1920,1080);
-//                mCamera.setParameters(parameters);
-//                error_tip.setVisibility(View.GONE);
-//                mSurfaceView.setVisibility(View.VISIBLE);
-//                mCamera.startPreview();
-//                if ((mThread != null) && (mRunningFlag == false)) {
-//                    mRunningFlag = true;
-//                    mThread.start();
-//                }
-//                //Thread.sleep(1000); // 等待3秒
-//
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//    }
-
-
+    public static void printAllAudioSources(Context context) {
+        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.DEFAULT);
+        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.MIC);
+        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.CAMCORDER);
+        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.VOICE_CALL);
+        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.VOICE_COMMUNICATION);
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        // 检查设备是否支持将音频路由到扬声器（假设HDMI音频通过扬声器播放）
+        if (audioManager.isSpeakerphoneOn()) {
+            Log.i(TAG, "Speakerphone is already on.");
+        } else {
+            // 尝试打开扬声器（这可能会影响音频路由，根据设备不同可能会将HDMI音频导向扬声器）
+            audioManager.setSpeakerphoneOn(true);
+            if (audioManager.isSpeakerphoneOn()) {
+                Log.i(TAG, "Speakerphone turned on successfully.");
+            } else {
+                Log.e(TAG, "Failed to turn on speakerphone.");
+            }
+        }
+    }
     private void refreshCamera() {
         Log.i(TAG, "refreshCamera: ");
         try {
@@ -342,6 +365,29 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 mCamera.setParameters(parameters);
                 mCamera.setPreviewDisplay(mSurfaceholder);
                 mCamera.startPreview();
+                loading_tip.setVisibility(View.GONE);
+                mSurfaceView.setVisibility(View.VISIBLE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void reOpenCamera() {
+        Log.i(TAG, "reOpenCamera: ");
+        try {
+            if (mCamera == null) {
+                Log.i(TAG, "reOpenCamera: camera == null");
+                mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+                Camera.Parameters parameters = mCamera.getParameters();
+                Log.i(TAG, "surfaceCreated: size" + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
+
+                parameters.setPreviewSize(1920, 1080);
+                mCamera.setParameters(parameters);
+                mCamera.setPreviewDisplay(mSurfaceholder);
+                mCamera.startPreview();
+                Log.i(TAG, "reOpenCamera: -------SurfaceView refresh");
                 loading_tip.setVisibility(View.GONE);
                 mSurfaceView.setVisibility(View.VISIBLE);
             }
@@ -452,7 +498,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder mHolder, int format, int width, int height) {
         Log.i(TAG, "surfaceChanged: 调用画面改变");
-
+        printAllAudioSources(getApplicationContext());
     }
 
     @Override
