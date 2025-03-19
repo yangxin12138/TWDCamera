@@ -332,24 +332,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     public static void printAllAudioSources(Context context) {
-        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.DEFAULT);
-        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.MIC);
-        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.CAMCORDER);
-        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.VOICE_CALL);
-        Log.i(TAG, "Available audio source: " + MediaRecorder.AudioSource.VOICE_COMMUNICATION);
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        // 检查设备是否支持将音频路由到扬声器（假设HDMI音频通过扬声器播放）
-        if (audioManager.isSpeakerphoneOn()) {
-            Log.i(TAG, "Speakerphone is already on.");
-        } else {
-            // 尝试打开扬声器（这可能会影响音频路由，根据设备不同可能会将HDMI音频导向扬声器）
-            audioManager.setSpeakerphoneOn(true);
-            if (audioManager.isSpeakerphoneOn()) {
-                Log.i(TAG, "Speakerphone turned on successfully.");
-            } else {
-                Log.e(TAG, "Failed to turn on speakerphone.");
-            }
-        }
+        audioManager.setParameters("SET_LOOPBACK_TYPE=5,3");
     }
     private void refreshCamera() {
         Log.i(TAG, "refreshCamera: ");
