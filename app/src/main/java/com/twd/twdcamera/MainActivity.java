@@ -12,15 +12,18 @@ import androidx.fragment.app.FragmentTransaction;
 import android.Manifest;
 
 
+import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.hardware.Camera;
-import android.media.AudioManager;
-import android.media.MediaRecorder;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 
 import android.os.Handler;
@@ -31,6 +34,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -96,10 +100,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         public boolean handleMessage(@NonNull Message msg) {
             switch (msg.what){
                 case MSG_CLOSE_CAMERA:
-                    closeCamera();
+                    //closeCamera();
                     break;
                 case MSG_OPEN_CAMERA:
-                    reOpenCamera();
+                    openCamera();
                     break;
             }
             return true;
@@ -137,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Log.i(TAG, "onCreate: -------启动-----");
         //保持屏幕常亮
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
+        //SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
         //初始化SurfaceView
         mSurfaceView = findViewById(R.id.cameraView);
         mSurfaceView.setBackgroundColor(Color.TRANSPARENT);
@@ -182,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mCamera = null;
         }
         mRunningFlag = false;
-        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");
+        //SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");
         unregisterReceiver(cameraReceiver);
         super.onDestroy();
     }
@@ -219,73 +223,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         mSurfaceView.setVisibility(View.GONE);
 
         Handler handler = new Handler(Looper.getMainLooper());
-
-        mThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Log.i(TAG, "run: +++");
-
-                openCamera();
-
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                previousResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                currentResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                Log.i(TAG, "run: 111 外部currentResolution:"+currentResolution+",previous:"+previousResolution);
-                if (! currentResolution.equals("10") ) {
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.i(TAG, "run: mSurfaceView set View.VISIBLE");
-                            loading_tip.setVisibility(View.GONE);
-                            mSurfaceView.setVisibility(View.VISIBLE);
-                        }
-                    });
-                }
-
-                while (mRunningFlag){
-                    String currentResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                    Log.i(TAG, "run: 222 外部currentResolution:"+currentResolution+",previous:"+previousResolution);
-                    if (! currentResolution.equals(previousResolution) && ! currentResolution.equals("10") ){
-                        Log.i(TAG, "run: currentResolution = "+ currentResolution + ", previousResolution = "+previousResolution);
-                        previousResolution = currentResolution;
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                //reopenCamera();
-                                refreshCamera();
-                            }
-                        });
-                        Log.i(TAG, "run: 修改后的分辨率 = " + previousResolution);
-                    } else if (currentResolution.equals("10")) {
-                        Log.i(TAG, "run: currentResolution = 10");
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                loading_tip.setVisibility(View.VISIBLE);
-                                mSurfaceView.setVisibility(View.GONE);
-                            }
-                        });
-                    }
-                    
-                    previousResolution = currentResolution;
-
-                    try {
-                        Thread.sleep(1000); // 等待1秒
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
-        if ((mThread != null) && (mRunningFlag == false)) {
-            mRunningFlag = true;
-            mThread.start();
+        String orientation = getScreenOrientation(this);
+        Log.i(TAG, "initView: --------orientation = " + orientation);
+        int status = readFile("/sys/devices/soc/1100f000.i2c/i2c-3/3-0048/hdmi_status");
+        if (status == 1){
+            openCamera();
+            Log.i(TAG, "run: ----初始化打开相机");
+            loading_tip.setVisibility(View.GONE);
+            mSurfaceView.setVisibility(View.VISIBLE);
+            Intent service_open = new Intent("OPEN.HDMI.AUDIO");
+            ComponentName component_open = new ComponentName("com.android.fmradio","com.android.fmradio.FmService");
+            service_open.setComponent(component_open);
+            startService(service_open);
+        } else {
+            Log.i(TAG, "run: --初始化未打开相机");
+            loading_tip.setVisibility(View.VISIBLE);
+            mSurfaceView.setVisibility(View.GONE);
         }
 
     }
@@ -301,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mCamera = null;
         }
         mRunningFlag = false;
-        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");//hdmi是否处于前台活动，1为活动，0为未活动
+        //SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");//hdmi是否处于前台活动，1为活动，0为未活动
     }
 
     private void closeCamera(){
@@ -319,43 +272,15 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     private void openCamera() {
-        if (mCamera == null) {
-            Log.i(TAG, "openCamera: ");
-            mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
-            Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setPreviewSize(1920,1080);
-            mCamera.setParameters(parameters);
-            ViewGroup.LayoutParams layoutParams = mSurfaceView.getLayoutParams();
-            Log.i(TAG, "openCamera: size = " + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
-            mCamera.startPreview();
-        }
-    }
-
-    public static void printAllAudioSources(Context context) {
-        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setParameters("SET_LOOPBACK_TYPE=5,3");
-    }
-    private void refreshCamera() {
-        Log.i(TAG, "refreshCamera: ");
-        try {
-            if (mCamera != null) {
-                Log.i(TAG, "refreshCamera: camera != null");
-                mCamera.stopPreview();
-                Camera.Parameters parameters = mCamera.getParameters();
-                ViewGroup.LayoutParams layoutParams = mSurfaceView.getLayoutParams();
-                Log.i(TAG, "surfaceCreated: size" + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
-
-                parameters.setPreviewSize(1920, 1080);
-                mCamera.setParameters(parameters);
-                mCamera.setPreviewDisplay(mSurfaceholder);
-                mCamera.startPreview();
-                loading_tip.setVisibility(View.GONE);
-                mSurfaceView.setVisibility(View.VISIBLE);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+        Camera.Parameters parameters = mCamera.getParameters();
+        parameters.setPreviewSize(1920,1080);
+        mCamera.setParameters(parameters);
+        setCameraDisplayOrientation(this,0,mCamera);
+        mCamera.startPreview();
+        loading_tip.setVisibility(View.GONE);
+        mSurfaceView.setVisibility(View.VISIBLE);
+        Log.i(TAG, "openCamera: ---2222");
     }
 
     private void reOpenCamera() {
@@ -366,14 +291,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
                 Camera.Parameters parameters = mCamera.getParameters();
                 Log.i(TAG, "surfaceCreated: size" + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
-
                 parameters.setPreviewSize(1920, 1080);
                 mCamera.setParameters(parameters);
-                mCamera.setPreviewDisplay(mSurfaceholder);
+                setCameraDisplayOrientation(this,0,mCamera);
                 mCamera.startPreview();
                 Log.i(TAG, "reOpenCamera: -------SurfaceView refresh");
-                loading_tip.setVisibility(View.GONE);
-                mSurfaceView.setVisibility(View.VISIBLE);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -381,6 +303,45 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     }
 
+    private void setCameraDisplayOrientation(Activity activity,int cameraId,Camera camera){
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        //获取摄像头信息
+        Camera.getCameraInfo(cameraId,info);
+        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+
+        //获取摄像头当前的角度
+        int degrees = 0;
+        switch (rotation){
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+        Log.i(TAG, "setCameraDisplayOrientation: degrees = " + degrees);
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT){
+            //前置摄像头
+            Log.i(TAG, "setCameraDisplayOrientation: 前置摄像头");
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360; // compensate the mirror
+        }else {
+            Log.i(TAG, "setCameraDisplayOrientation: back-facing  后置摄像头");
+            // back-facing  后置摄像头
+            result = (info.orientation - degrees + 360) % 360;
+            Log.i(TAG, "setCameraDisplayOrientation: result = " + result + ",info.orientation = "+info.orientation+",degrees = " + degrees);
+            result = (result + 180) % 360-90;
+        }
+        Log.i(TAG, "setCameraDisplayOrientation: result = " + result);
+        camera.setDisplayOrientation(result);
+    }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -401,6 +362,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         flag = true;
                         return true;
                     }
+                    finish();
+                    new CloseCameraTask().execute();
+                    Intent service_close = new Intent("CLOSE.HDMI.AUDIO");
+                    ComponentName component_close = new ComponentName("com.android.fmradio","com.android.fmradio.FmService");
+                    service_close.setComponent(component_close);
+                    startService(service_close);
                     break;
             }
         }
@@ -482,19 +449,106 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder mHolder, int format, int width, int height) {
         Log.i(TAG, "surfaceChanged: 调用画面改变");
-        printAllAudioSources(getApplicationContext());
+        //printAllAudioSources(getApplicationContext());
     }
+
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
         Log.i(TAG, "surfaceDestroyed: 调用画面被回收");
-//        if (camera != null){
-//            Log.i(TAG, "surfaceDestroyed: camera release");
-//            camera.stopPreview();
-//            camera.setPreviewCallback(null);
-//            camera.release();
-//            camera = null;
-//        }
+/*        if (mCamera != null){
+            Log.i(TAG, "surfaceDestroyed: camera release");
+            mCamera.stopPreview();
+            mCamera.setPreviewCallback(null);
+            mCamera.release();
+            mCamera = null;
+        }*/
 
+    }
+    private int readFile(String filePath){
+        File file = new File(filePath);
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String line = reader.readLine();
+            if (line != null) {
+                return Integer.parseInt(line.trim());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return -1; // 若读取失败，返回 -1
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_F12 && event.getAction() == KeyEvent.ACTION_DOWN){
+            int status = readFile("/sys/devices/soc/1100f000.i2c/i2c-3/3-0048/hdmi_status");
+            if (status == 1){
+                Log.i(TAG, "onKeyDown: -------打开声音服务");
+                openCamera();
+                Intent service_open = new Intent("OPEN.HDMI.AUDIO");
+                ComponentName component_open = new ComponentName("com.android.fmradio","com.android.fmradio.FmService");
+                service_open.setComponent(component_open);
+                startService(service_open);
+            } else if (status == 0) {
+                Log.i(TAG, "onKeyDown: -------关闭声音服务");
+                new CloseCameraTask().execute();
+                Intent service_close = new Intent("CLOSE.HDMI.AUDIO");
+                ComponentName component_close = new ComponentName("com.android.fmradio","com.android.fmradio.FmService");
+                service_close.setComponent(component_close);
+                startService(service_close);
+                loading_tip.setVisibility(View.VISIBLE);
+                mSurfaceView.setVisibility(View.GONE);
+            }else {
+
+            }
+        }
+        return false;
+    }
+
+
+    private class CloseCameraTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            if (mCamera != null) {
+                mCamera.stopPreview();
+                mCamera.setPreviewCallback(null);
+                mCamera.release();
+                mCamera = null;
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            mRunningFlag = false;
+        }
+    }
+
+    public String getScreenOrientation(Context context) {
+        final int screenOrientation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getOrientation();
+        switch (screenOrientation) {
+            case Surface.ROTATION_0:
+                return "screen_orientation_portrait";
+            case Surface.ROTATION_90:
+                return "screen_orientation_landscape";
+            case Surface.ROTATION_180:
+                return "screen_orientation_reverse_portrait";
+            case Surface.ROTATION_270:
+                return "screen_orientation_reverse_landscape";
+        }
+        return "unknown";
     }
 }
