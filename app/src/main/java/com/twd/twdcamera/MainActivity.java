@@ -12,6 +12,7 @@ import androidx.fragment.app.FragmentTransaction;
 import android.Manifest;
 
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -187,11 +188,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onDestroy();
     }
 
-    /* 判断相机权限*/
-    private boolean allPermissionsGranted() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
-    }
-
     private void initView() {
         drawerLayout = findViewById(R.id.drawer_layout);
         LLScreen = findViewById(R.id.LL_screen);
@@ -219,73 +215,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         mSurfaceView.setVisibility(View.GONE);
 
         Handler handler = new Handler(Looper.getMainLooper());
-
-        mThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Log.i(TAG, "run: +++");
-
-                openCamera();
-
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-                previousResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                currentResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                Log.i(TAG, "run: 111 外部currentResolution:"+currentResolution+",previous:"+previousResolution);
-                if (! currentResolution.equals("10") ) {
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.i(TAG, "run: mSurfaceView set View.VISIBLE");
-                            loading_tip.setVisibility(View.GONE);
-                            mSurfaceView.setVisibility(View.VISIBLE);
-                        }
-                    });
-                }
-
-                while (mRunningFlag){
-                    String currentResolution = ReadHdmiInfo(HDMI_FILE_PATH);
-                    Log.i(TAG, "run: 222 外部currentResolution:"+currentResolution+",previous:"+previousResolution);
-                    if (! currentResolution.equals(previousResolution) && ! currentResolution.equals("10") ){
-                        Log.i(TAG, "run: currentResolution = "+ currentResolution + ", previousResolution = "+previousResolution);
-                        previousResolution = currentResolution;
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                //reopenCamera();
-                                refreshCamera();
-                            }
-                        });
-                        Log.i(TAG, "run: 修改后的分辨率 = " + previousResolution);
-                    } else if (currentResolution.equals("10")) {
-                        Log.i(TAG, "run: currentResolution = 10");
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                loading_tip.setVisibility(View.VISIBLE);
-                                mSurfaceView.setVisibility(View.GONE);
-                            }
-                        });
-                    }
-                    
-                    previousResolution = currentResolution;
-
-                    try {
-                        Thread.sleep(1000); // 等待1秒
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
-        if ((mThread != null) && (mRunningFlag == false)) {
-            mRunningFlag = true;
-            mThread.start();
+        int status = readFile("/sys/it6616/hdmi_status");
+        if (status == 1){
+            openCamera();
+            Log.i(TAG, "run: ----初始化打开相机");
+            loading_tip.setVisibility(View.GONE);
+            mSurfaceView.setVisibility(View.VISIBLE);
+            printAllAudioSources(getApplicationContext(),true);
+        } else {
+            Log.i(TAG, "run: --初始化未打开相机");
+            loading_tip.setVisibility(View.VISIBLE);
+            mSurfaceView.setVisibility(View.GONE);
         }
 
     }
@@ -301,6 +241,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mCamera = null;
         }
         mRunningFlag = false;
+        printAllAudioSources(getApplicationContext(),false);
         SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"0");//hdmi是否处于前台活动，1为活动，0为未活动
     }
 
@@ -331,9 +272,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
-    public static void printAllAudioSources(Context context) {
+    public static void printAllAudioSources(Context context,boolean able) {
+        Log.i(TAG, "printAllAudioSources: able = "+able);
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        audioManager.setParameters("SET_LOOPBACK_TYPE=5,3");
+        audioManager.setParameters(able ? "SET_LOOPBACK_TYPE=5,3" : "SET_LOOPBACK_TYPE=0");
     }
     private void refreshCamera() {
         Log.i(TAG, "refreshCamera: ");
@@ -401,6 +343,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         flag = true;
                         return true;
                     }
+                    closeCamera();
+                    printAllAudioSources(getApplicationContext(),false);
+                    loading_tip.setVisibility(View.VISIBLE);
+                    mSurfaceView.setVisibility(View.GONE);
+                    finish();
                     break;
             }
         }
@@ -448,27 +395,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     }
 
-    private String ReadHdmiInfo(String filePath){
-        try {
-            //创建文件对象
-            File file = new File(filePath);
-            //创建文件读取对象
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-            String lines;
-            StringBuilder content = new StringBuilder();
-            //逐行读取文件内容
-            while ((lines = reader.readLine()) != null){
-                content.append(lines);
-            }
-            String hdmi_resolution = content.toString();
-            reader.close();
-            return hdmi_resolution;
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         Log.i(TAG, "surfaceCreated: ");
@@ -482,7 +408,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder mHolder, int format, int width, int height) {
         Log.i(TAG, "surfaceChanged: 调用画面改变");
-        printAllAudioSources(getApplicationContext());
+        printAllAudioSources(getApplicationContext(),true);
     }
 
     @Override
@@ -496,5 +422,53 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 //            camera = null;
 //        }
 
+    }
+
+    private int readFile(String filePath){
+        File file = new File(filePath);
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String line = reader.readLine();
+            if (line != null) {
+                return Integer.parseInt(line.trim());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return -1; // 若读取失败，返回 -1
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_F12 && event.getAction() == KeyEvent.ACTION_DOWN){
+            int status = readFile("/sys/it6616/hdmi_status");
+            if (status == 1){
+                Log.i(TAG, "onKeyDown: -------打开相机");
+                openCamera();
+                loading_tip.setVisibility(View.GONE);
+                mSurfaceView.setVisibility(View.VISIBLE);
+                printAllAudioSources(getApplicationContext(),true);
+            } else if (status == 0) {
+                Log.i(TAG, "onKeyDown: -------关闭相机");
+                closeCamera();
+                printAllAudioSources(getApplicationContext(),false);
+                loading_tip.setVisibility(View.VISIBLE);
+                mSurfaceView.setVisibility(View.GONE);
+            }else {
+
+            }
+        }
+        return false;
     }
 }
