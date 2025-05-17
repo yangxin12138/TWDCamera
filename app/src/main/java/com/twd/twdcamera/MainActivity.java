@@ -451,7 +451,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (event.getKeyCode() == KeyEvent.KEYCODE_F11 && event.getAction() == KeyEvent.ACTION_DOWN){
+        if (event.getKeyCode() == KeyEvent.KEYCODE_F10 && event.getAction() == KeyEvent.ACTION_DOWN){
             int status = readFile("/sys/it6616/hdmi_status");
             if (status == 1){
                 Log.i(TAG, "onKeyDown: -------打开相机");
