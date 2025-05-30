@@ -217,6 +217,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Handler handler = new Handler(Looper.getMainLooper());
         int status = readFile("/sys/it6616/hdmi_status");
         if (status == 1){
+            SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
             openCamera();
             Log.i(TAG, "run: ----初始化打开相机");
             loading_tip.setVisibility(View.GONE);
@@ -408,6 +409,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder mHolder, int format, int width, int height) {
         Log.i(TAG, "surfaceChanged: 调用画面改变");
+        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
         printAllAudioSources(getApplicationContext(),true);
     }
 
@@ -455,6 +457,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             int status = readFile("/sys/it6616/hdmi_status");
             if (status == 1){
                 Log.i(TAG, "onKeyDown: -------打开相机");
+                SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
                 openCamera();
                 loading_tip.setVisibility(View.GONE);
                 mSurfaceView.setVisibility(View.VISIBLE);
