@@ -3,6 +3,7 @@ package com.twd.twdcamera;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -20,6 +21,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -52,6 +56,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnFocusChangeListener, View.OnClickListener {
@@ -106,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             return true;
         }
     });
-
+    private static final int REQUEST_CAMERA_PERMISSION = 1;
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -229,6 +235,23 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             mSurfaceView.setVisibility(View.GONE);
         }
 
+        SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.CAMERA},
+                    REQUEST_CAMERA_PERMISSION
+            );
+        } else {
+            openCamera(); // 已经有权限，直接打开相机
+        }
+        //openCamera();
+        Log.i(TAG, "run: ----初始化打开相机");
+        loading_tip.setVisibility(View.GONE);
+        mSurfaceView.setVisibility(View.VISIBLE);
+        printAllAudioSources(getApplicationContext(),true);
+
     }
 
     @Override
@@ -262,15 +285,71 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private void openCamera() {
         if (mCamera == null) {
-            Log.i(TAG, "openCamera: ");
-            mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+            Log.i(TAG, "openCamera: 打印所有可用的摄像头信息");
+            // 打印所有可用的摄像头信息
+            printAvailableCameras();
+
+            // 获取所有摄像头 ID
+            Log.i(TAG, "openCamera: 获取所有摄像头 ID");
+            List<Integer> cameraIds = getAvailableCameraIds();
+            Log.i(TAG, "Available Camera IDs: " + cameraIds);
+
+            // 获取后置摄像头 ID
+            Log.i(TAG, "openCamera: 获取所有摄像头 ID");
+            int backCameraId = getBackCameraId();
+            if (backCameraId != -1) {
+                Log.i(TAG, "Back Camera ID: " + backCameraId);
+            } else {
+                Log.e(TAG, "No back camera found!");
+            }
+            mCamera = Camera.open(0);
             Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setPreviewSize(1920,1080);
+            List<Camera.Size> supportedSizes = parameters.getSupportedPreviewSizes();
+            for (Camera.Size size : supportedSizes) {
+                Log.i(TAG, "Supported preview size: " + size.width + "x" + size.height);
+            }
+            parameters.setPreviewSize(640,480);
             mCamera.setParameters(parameters);
-            ViewGroup.LayoutParams layoutParams = mSurfaceView.getLayoutParams();
             Log.i(TAG, "openCamera: size = " + parameters.getPreviewSize().width + "," + parameters.getPreviewSize().height);
             mCamera.startPreview();
         }
+    }
+
+    private void printAvailableCameras() {
+        int numberOfCameras = Camera.getNumberOfCameras(); // 获取摄像头数量
+        Log.i(TAG, "Number of cameras: " + numberOfCameras);
+
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo); // 获取摄像头信息
+            String facing = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) ? "Back" : "Front";
+            Log.i(TAG, "Camera ID: " + i + ", Facing: " + facing + ", Orientation: " + cameraInfo.orientation);
+        }
+    }
+
+    private List<Integer> getAvailableCameraIds() {
+        List<Integer> cameraIds = new ArrayList<>();
+        int numberOfCameras = Camera.getNumberOfCameras();
+
+        for (int i = 0; i < numberOfCameras; i++) {
+            cameraIds.add(i);
+        }
+
+        return cameraIds;
+    }
+
+    private int getBackCameraId() {
+        int numberOfCameras = Camera.getNumberOfCameras();
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+
+        for (int i = 0; i < numberOfCameras; i++) {
+            Camera.getCameraInfo(i, cameraInfo);
+            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                return i; // 返回后置摄像头的 ID
+            }
+        }
+
+        return -1; // 没有找到后置摄像头
     }
 
     public static void printAllAudioSources(Context context,boolean able) {
