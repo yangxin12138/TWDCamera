@@ -220,7 +220,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         loading_tip.setVisibility(View.VISIBLE);
         mSurfaceView.setVisibility(View.GONE);
 
-        Handler handler = new Handler(Looper.getMainLooper());
         int status = readFile("/sys/it6616/hdmi_status");
         if (status == 1){
             SystemPropertiesUtils.setProperty(HDMI_ACTIVITY,"1");
@@ -248,8 +247,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
         //openCamera();
         Log.i(TAG, "run: ----初始化打开相机");
-        loading_tip.setVisibility(View.GONE);
-        mSurfaceView.setVisibility(View.VISIBLE);
+/*        loading_tip.setVisibility(View.GONE);
+        mSurfaceView.setVisibility(View.VISIBLE);*/
         printAllAudioSources(getApplicationContext(),true);
 
     }
@@ -435,7 +434,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     public void openMenu() {
-        drawerLayout.openDrawer(GravityCompat.START);
+       // drawerLayout.openDrawer(GravityCompat.START);
     }
 
     public void closeMenu() {

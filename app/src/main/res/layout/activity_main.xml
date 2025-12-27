@@ -21,7 +21,7 @@
             android:id="@+id/loading_tip"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="gone"
+            android:visibility="visible"
             android:src="@drawable/loading_tip"/>
 
         <!--TODO:调用相机画面-->
